@@ -1,0 +1,148 @@
+# This Python 3 environment comes with many helpful analytics libraries installed
+# It is defined by the kaggle/python Docker image: https://github.com/kaggle/docker-python
+# For example, here's several helpful packages to load
+
+import numpy as np # linear algebra
+import pandas as pd # data processing, CSV file I/O (e.g. pd.read_csv)
+
+# Input data files are available in the read-only "../input/" directory
+# For example, running this (by clicking run or pressing Shift+Enter) will list all files under the input directory
+
+import os
+for dirname, _, filenames in os.walk('/kaggle/input'):
+    for filename in filenames:
+        print(os.path.join(dirname, filename))
+
+# You can write up to 20GB to the current directory (/kaggle/working/) that gets preserved as output when you create a version using "Save & Run All" 
+# You can also write temporary files to /kaggle/temp/, but they won't be saved outside of the current session
+import nltk
+from nltk.stem import PorterStemmer, SnowballStemmer
+from nltk.tokenize import word_tokenize
+
+# Download NLTK data if not already available
+nltk.download('punkt')
+print("-"*20)
+# Initialize the stemmers
+porter = PorterStemmer()
+snowball = SnowballStemmer("english")
+
+# Example sentence
+sentence = "The cats were running quickly towards the jumping dogs."
+print("Original sentence :",sentence)
+print("-"*20)
+# Tokenize the sentence
+tokens = word_tokenize(sentence)
+
+# Apply Porter Stemmer
+porter_stemmed = [porter.stem(token) for token in tokens]
+
+# Apply Snowball Stemmer
+snowball_stemmed = [snowball.stem(token) for token in tokens]
+
+# Display results
+print("Original Tokens:    ", tokens)
+print("-"*20)
+print("Porter Stemmer:     ", porter_stemmed)
+print("-"*20)
+print("Snowball Stemmer:   ", snowball_stemmed)
+!pip install Keras-Preprocessing
+!pip install Keras
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder
+from tensorflow.keras.models import Model
+from tensorflow.keras.layers import LSTM, Activation, Dense, Dropout, Input, Embedding
+from tensorflow.keras.optimizers import RMSprop
+from tensorflow.keras.preprocessing.text import Tokenizer
+from tensorflow.keras.preprocessing import sequence
+from tensorflow.keras.utils import to_categorical
+from tensorflow.keras.callbacks import EarlyStopping
+
+%matplotlib inline
+df = pd.read_csv(r'/kaggle/input/sms-spam-collection-dataset/spam.csv', encoding='latin-1')
+df.head()
+# Dropping unnecessary columns for NN
+
+df.drop(['Unnamed: 2', 'Unnamed: 3', 'Unnamed: 4'],axis=1,inplace=True)
+df.info()
+df.head()
+df['v1'].value_counts()
+# Creating input / output vectors 
+
+X = df.v2 # SMS messages (Input Feature)
+Y = df.v1 # Ham or Spam (Output Feature)
+
+le = LabelEncoder()
+Y = le.fit_transform(Y) # "ham" → 0 // "spam" → 1
+Y = Y.reshape(-1,1)
+Y
+# Test Train split
+
+X_train,X_test,Y_train,Y_test = train_test_split(X,Y,test_size=0.15)
+max_words = 1000  # 1000 most frequent words in the dataset
+max_len = 150 # sequence is longer than 150 words,
+
+tok = Tokenizer(num_words=max_words) # limit tokenizer to consider to top1000
+
+tok.fit_on_texts(X_train) 
+
+sequences = tok.texts_to_sequences(X_train)
+
+sequences_matrix = sequence.pad_sequences(sequences,maxlen=max_len)
+sequences_matrix
+X_train.shape
+sequences_matrix.shape
+Y_train.shape
+sequences_matrix
+def RNN():
+    # Input layer
+    inputs = Input(name='inputs', shape=[max_len])
+    
+    # Embedding layer (converts input sequences to dense vectors)
+    layer = Embedding(max_words, 50, input_length=max_len)(inputs)
+
+    # LSTM layer (captures temporal dependencies in sequences)
+    layer = LSTM(64)(layer)
+
+    # Fully connected layer (dense layer)
+    layer = Dense(256, name='FC1')(layer)
+
+    # Activation function (ReLU)
+    layer = Activation('relu')(layer)
+
+    # Dropout layer (helps prevent overfitting)
+    layer = Dropout(0.5)(layer)
+
+    # Output layer (single unit for binary classification)
+    layer = Dense(1, name='out_layer')(layer)
+
+    # Creating the model
+    model = Model(inputs=inputs, outputs=layer)
+
+    return model
+from tensorflow.keras.utils import plot_model
+
+model = RNN()
+model.summary()
+plot_model(model, to_file='model_architecture.png', show_shapes=True, show_layer_names=True)
+model.compile(loss='binary_crossentropy',optimizer=RMSprop(),metrics=['accuracy'])
+# Define the EarlyStopping callback
+
+early_stopping = EarlyStopping(monitor='val_loss',  #  validation loss
+                               min_delta=0.0001,   # minimum change to qualify as an improvement
+                               patience=3,         # number of epochs with no improvement to wait before stopping
+                               restore_best_weights=True)  # Restore the best weights when stopping early
+# train 
+
+model.fit(sequences_matrix,
+          Y_train,
+          batch_size=128,
+          epochs=2,
+          validation_split=0.2,
+          callbacks=[early_stopping])
+test_sequences = tok.texts_to_sequences(X_test)
+test_sequences_matrix = sequence.pad_sequences(test_sequences,maxlen=max_len)
+score = model.evaluate(test_sequences_matrix,Y_test)
+print('Test set\n  Loss: {:0.3f}\n  Accuracy: {:0.3f}'.format(score[0],score[1]))
