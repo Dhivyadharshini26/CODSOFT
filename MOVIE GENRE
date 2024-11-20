@@ -1,0 +1,164 @@
+# This Python 3 environment comes with many helpful analytics libraries installed
+# It is defined by the kaggle/python Docker image: https://github.com/kaggle/docker-python
+# For example, here's several helpful packages to load
+
+import numpy as np # linear algebra
+import pandas as pd # data processing, CSV file I/O (e.g. pd.read_csv)
+
+# Input data files are available in the read-only "../input/" directory
+# For example, running this (by clicking run or pressing Shift+Enter) will list all files under the input directory
+
+import os
+for dirname, _, filenames in os.walk('/kaggle/input'):
+    for filename in filenames:
+        print(os.path.join(dirname, filename))
+
+# You can write up to 20GB to the current directory (/kaggle/working/) that gets preserved as output when you create a version using "Save & Run All" 
+# You can also write temporary files to /kaggle/temp/, but they won't be saved outside of the current session
+import numpy as np
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.model_selection import train_test_split
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.metrics import accuracy_score, confusion_matrix, classification_report, r2_score
+from sklearn.preprocessing import LabelEncoder  
+from sklearn.linear_model import LogisticRegression
+df_train = pd.read_csv('/kaggle/input/genre-classification-dataset-imdb/Genre Classification Dataset/train_data.txt', sep=":::", header=None, engine='python')
+df_test = pd.read_csv('/kaggle/input/genre-classification-dataset-imdb/Genre Classification Dataset/test_data.txt', sep=":::", header=None, engine='python')
+
+df_train.columns = ['SN', 'movie_name', 'category', 'confession']
+df_test.columns = ['SN', 'movie_name', 'confession']
+df_test.head()
+df_train.head()
+df_test.info()
+df_train.info()
+df_train.describe()
+df_test.describe()
+df_test.isnull().sum()
+df_train.isnull().sum()
+df_train.count()
+df_test.count()
+df_train.iloc[0:3]
+df_train.loc[0]
+df_test.shape
+df_train.shape
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Set a modern style for the plot
+sns.set(style="whitegrid", context="talk", palette="muted")
+
+# Set figure size
+plt.figure(figsize=(14, 10))
+
+# Customize the count plot
+sns.countplot(x='category', data=df_train, 
+              order=df_train['category'].value_counts().index,  # Sorting by count
+              palette="coolwarm",  # A stylish color palette
+              edgecolor='black',  # Add borders to bars
+              linewidth=2)  # Border width
+
+# Customize labels and title with stylish fonts and sizes
+plt.xlabel('Movie Category', fontsize=14, fontweight='bold', color='#333333')
+plt.ylabel('Count', fontsize=14, fontweight='bold', color='#333333')
+plt.title('Movie Genre Distribution', fontsize=18, fontweight='bold', color='#333333', pad=20)
+
+# Rotate the x-axis labels for better readability
+plt.xticks(rotation=45, ha='right', fontsize=12)
+
+# Add gridlines to enhance readability
+plt.grid(True, which='both', axis='y', linestyle='--', alpha=0.7)
+
+# Remove top and right borders for a clean look
+sns.despine()
+
+# Display the plot
+plt.show()
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Set figure size to make x-axis labels more readable
+plt.figure(figsize=(14, 8))
+
+# Create a distribution plot for the category with KDE
+sns.histplot(df_train.category, kde=True, color="blue")
+
+# Customize x-axis labels: rotating them for better readability
+plt.xticks(rotation=45, ha='right', fontsize=12)
+
+# Set axis labels and title
+plt.xlabel('Movie Category', fontsize=14, fontweight='bold')
+plt.ylabel('Density', fontsize=14, fontweight='bold')
+plt.title('Movie Category Distribution with KDE', fontsize=18, fontweight='bold', pad=20)
+
+# Add gridlines to enhance readability
+plt.grid(True, which='both', axis='y', linestyle='--', alpha=0.7)
+
+# Remove top and right borders for a clean look
+sns.despine()
+
+# Show the plot
+plt.show()
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Set figure size to make x-axis labels more readable
+plt.figure(figsize=(14, 8))
+
+# Create a distribution plot for the category with KDE
+sns.histplot(df_train.category, kde=False, color="red")
+
+# Customize x-axis labels: rotating them for better readability
+plt.xticks(rotation=45, ha='right', fontsize=12)
+
+# Set axis labels and title
+plt.xlabel('Movie Category', fontsize=14, fontweight='bold')
+plt.ylabel('Density', fontsize=14, fontweight='bold')
+plt.title('Movie Category Distribution with KDE', fontsize=18, fontweight='bold', pad=20)
+
+# Add gridlines to enhance readability
+plt.grid(True, which='both', axis='y', linestyle='--', alpha=0.7)
+
+# Remove top and right borders for a clean look
+sns.despine()
+
+# Show the plot
+plt.show()
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+plt.figure(figsize=(14, 10))
+count1 = df_train['category'].value_counts()
+
+# Seaborn barplot expects 'x' for values and 'y' for categories
+sns.barplot(x=count1.values, y=count1.index, orient='h')
+
+plt.xlabel('Count')
+plt.ylabel('Categories')
+plt.title('Movie Genre Plot')
+plt.xticks(rotation=90)
+plt.show()
+df_combined = pd.concat([df_train, df_test],axis = 0)
+df_combined.head()
+df_combined.shape
+df_combined.size
+df_combined.isnull().any()
+df_combined.count()
+from sklearn.preprocessing import LabelEncoder
+
+encoder = LabelEncoder()
+df_combined["category"] = encoder.fit_transform(df_combined["category"])
+from sklearn.preprocessing import LabelEncoder
+
+encoder = LabelEncoder()
+df_combined["category"] = encoder.fit_transform(df_combined["movie_name"])
+df_combined.head()
+# Fill missing values with the most frequent category (mode)
+df_combined['category'] = df_combined['category'].fillna(df_combined['category'].mode()[0])
+df_combined.count()
+df_combined.duplicated().values.any()
+vectorizer = TfidfVectorizer()
+x = vectorizer.fit_transform(df_combined["confession"])
+df_combined.head()
